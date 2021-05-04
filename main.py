@@ -7,11 +7,17 @@ from gamelib import Sprite, GameApp, Text
 
 from consts import *
 
-class SlowFruit(Sprite):
-    def __init__(self, app, x, y):
-        super().__init__(app, 'images/apple.png', x, y)
+class Fruit(Sprite):
+    def __init__(self, app, x, y, file_name):
+        super().__init__(app, file_name, x, y)
 
         self.app = app
+
+
+class SlowFruit(Fruit):
+
+    def set_direction(self):
+        pass
 
     def update(self):
         self.y += FRUIT_SLOW_SPEED
@@ -20,11 +26,9 @@ class SlowFruit(Sprite):
             self.to_be_deleted = True
 
 
-class FastFruit(Sprite):
-    def __init__(self, app, x, y):
-        super().__init__(app, 'images/banana.png', x, y)
-
-        self.app = app
+class FastFruit(Fruit):
+    def set_direction(self):
+        pass
 
     def update(self):
         self.y += FRUIT_FAST_SPEED
@@ -33,11 +37,8 @@ class FastFruit(Sprite):
             self.to_be_deleted = True
 
 
-class SlideFruit(Sprite):
-    def __init__(self, app, x, y):
-        super().__init__(app, 'images/cherry.png', x, y)
-
-        self.app = app
+class SlideFruit(Fruit):
+    def set_direction(self):
         self.direction = randint(0,1)*2 - 1
 
     def update(self):
@@ -48,17 +49,14 @@ class SlideFruit(Sprite):
             self.to_be_deleted = True
 
 
-class CurvyFruit(Sprite):
-    def __init__(self, app, x, y):
-        super().__init__(app, 'images/pear.png', x, y)
-
-        self.app = app
-        self.t = randint(0,360) * 2 * math.pi / 360
+class CurvyFruit(Fruit):
+    def set_direction(self):
+        self.t = randint(0, 360) * 2 * math.pi / 360
 
     def update(self):
         self.y += FRUIT_SLOW_SPEED * 1.2
         self.t += 1
-        self.x += math.sin(self.t*0.08)*10
+        self.x += math.sin(self.t * 0.08) * 10
 
         if self.y > CANVAS_WIDTH + 30:
             self.to_be_deleted = True
@@ -82,7 +80,14 @@ class Basket(Sprite):
     def check_collision(self, fruit):
         if self.distance_to(fruit) <= BASKET_CATCH_DISTANCE:
             fruit.to_be_deleted = True
-            self.app.score += 1
+            if self.app.serial == 1:
+                self.app.score += 1
+            elif self.app.serial == 2:
+                self.app.score += 2
+            elif self.app.serial == 3:
+                self.app.score += 3
+            elif self.app.serial == 4:
+                self.app.score += 4
             self.app.update_score()
 
 
@@ -90,7 +95,7 @@ class BasketGame(GameApp):
     def init_game(self):
         self.basket = Basket(self, CANVAS_WIDTH // 2, CANVAS_HEIGHT - 50)
         self.elements.append(self.basket)
-
+        self.serial = 0
         self.score = 0
         self.score_text = Text(self, 'Score: 0', 100, 40)
         self.fruits = []
@@ -103,14 +108,19 @@ class BasketGame(GameApp):
             p = random()
             x = randint(50, CANVAS_WIDTH - 50)
             if p <= 0.3:
-                new_fruit = SlowFruit(self, x, 0)
+                new_fruit = SlowFruit(self, x, 0,'images/apple.png')
+                self.serial = 1
             elif p <= 0.6:
-                new_fruit = FastFruit(self, x, 0)
+                new_fruit = FastFruit(self, x, 0,'images/banana.png')
+                self.serial = 2
             elif p <= 0.8:
-                new_fruit = SlideFruit(self, x, 0)
+                new_fruit = SlideFruit(self, x, 0,'images/cherry.png')
+                self.serial = 3
             else:
-                new_fruit = CurvyFruit(self, x, 0)
+                new_fruit = CurvyFruit(self, x, 0,'images/pear.png')
+                self.serial = 4
 
+            new_fruit.set_direction()
             self.fruits.append(new_fruit)
 
     def process_collisions(self):
@@ -140,12 +150,12 @@ class BasketGame(GameApp):
             self.basket.direction = BASKET_LEFT
         elif event.keysym == 'Right':
             self.basket.direction = BASKET_RIGHT
-    
+
 
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Basket Fighter")
- 
+
     # do not allow window resizing
     root.resizable(False, False)
     app = BasketGame(root, CANVAS_WIDTH, CANVAS_HEIGHT, UPDATE_DELAY)
